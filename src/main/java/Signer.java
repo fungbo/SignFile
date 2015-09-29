@@ -7,32 +7,22 @@ public class Signer {
     public static final String PRIVATE_KEY_PEM = "key.pem";
     public static final String PRIVATE_KEY_DER = "key.pk8";
 
-    public void sign(InputStream privateKeyPem, String fileURL) throws IOException, InterruptedException {
+    public void sign(InputStream privateKeyPem, String fileURL) throws Exception {
         createFolder();
         savePrivateKey(privateKeyPem);
         convertPrivateKeyToDerFormat();
         doSign(fileURL);
     }
 
-    private void doSign(String fileURL) {
-        try {
-            String command = String.format("java -jar %s %s %s %s %s",
-                    getSignJarPath(), getCertificatePath(), getPrivateKeyPath(),
-                    fileURL, "signed.jar");
-            Process p = Runtime.getRuntime().exec(command);
-            p.waitFor();
+    private void doSign(String fileURL) throws Exception {
+        String command = String.format("java -jar %s %s %s %s %s",
+                getSignJarPath(), getCertificatePath(), getPrivateKeyPath(),
+                fileURL, "signed.jar");
+        Process p = Runtime.getRuntime().exec(command);
+        p.waitFor();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-
-            StringBuilder sb = new StringBuilder();
-            String line = "";
-            while ((line = reader.readLine()) != null) {
-                sb.append(line + "\n");
-            }
-            System.out.println(sb.toString());
-        } catch (Exception e) {
-            System.out.println(e.toString());
-        }
+        String s = IOUtils.toString(p.getInputStream());
+        System.out.println("s = " + s);
     }
 
     private void convertPrivateKeyToDerFormat() throws IOException, InterruptedException {
@@ -82,7 +72,7 @@ public class Signer {
         return new File(getPrivateKeyDerPath()).getAbsolutePath();
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws Exception {
         InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(PRIVATE_KEY_PEM);
         Signer signer = new Signer();
         String filePath = Thread.currentThread().getContextClassLoader().getResource("springboot-web.jar").getPath();
